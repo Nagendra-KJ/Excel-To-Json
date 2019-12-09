@@ -95,23 +95,17 @@ public class ExcelToJson {
                     Row headerRow=worksheet.getRow(0);
                     Cell cgpaCell=headerRow.getCell(headerRow.getLastCellNum()-2);
                     char cgpaLetter=cgpaCell.getAddress().toString().charAt(0);
-                    //char sgpaLetter=(char)(cgpaLetter-1);
                     String formula="";
                     formula="AVERAGE("+cgpaLetter+"2:"+cgpaLetter+(nRows)+")";
                     Cell avgCCell=avgRow.createCell(headerRow.getLastCellNum()-2);
                     avgCCell.setCellType(CellType.FORMULA);
                     avgCCell.setCellFormula(formula);
-                    //formula="AVERAGE("+sgpaLetter+"2:"+sgpaLetter+(nRows)+")";
-                    //Cell avgSCell=avgRow.createCell(headerRow.getLastCellNum()-3);
-                    //avgSCell.setCellFormula(formula);
                 }
                 fileOutputStream=new FileOutputStream(excelFile);
                 workbook.write(fileOutputStream);
                 fileOutputStream.close();
                 workbook.close();
                 fileInputStream.close();
-                //FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
-                //formulaEvaluator.evaluateAll();
             } catch (IOException e) {
                 continue;
             }
