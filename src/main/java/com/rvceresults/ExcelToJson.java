@@ -4,10 +4,15 @@ import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
 import org.json.simple.*;
-
 import java.io.*;
 
+
 @SuppressWarnings("ALL")
+/*All that is happening in this class is that once the respective grabber gets the results and stores them in the
+Excel sheets, we are calculating the average by the formula. And evaluating the formula in the getUniversityRecord
+and is written to dataset.json file.
+ */
+
 public class ExcelToJson {
     private String[] fileNames = {"Semester 1.xls", "Semester 2.xls", "Semester 3.xls","Semester 4.xls",
             "Semester 5.xls","Semester 6.xls","Semester 7.xls","Semester 8.xls"};
@@ -17,18 +22,23 @@ public class ExcelToJson {
         ExcelToJson writer = new ExcelToJson();
         Grabber grab = new RvceGrabber();
         grab.getResult();
+        /*
         writer.calculateAverage();
         writer.writeToFile();
+         */
         System.exit(new ExitStatus().EXIT_ON_COMPLETION);
     }
 
-    private void writeToFile() throws IOException {
-        FileWriter fileWriter = new FileWriter(new File(RvceGrabber.getPath(), "dataset.json"));
+
+    private void writeToFile() throws IOException
+    {
+        FileWriter fileWriter = new FileWriter(new File(Grabber.getPath(), "dataset.json"));
         getUniversityRecord().writeJSONString(fileWriter);
         fileWriter.close();
     }
 
-    private JSONObject getStudentRecord(Row studentRow) {
+    private JSONObject getStudentRecord(Row studentRow)
+    {
         JSONObject record = new JSONObject();
         for (int i = 1; i < headerRow.getPhysicalNumberOfCells(); ++i) {
             Cell dataCell=studentRow.getCell(i);
@@ -63,8 +73,9 @@ public class ExcelToJson {
         JSONObject university = new JSONObject();
         Workbook workbook = null;
         for (int i = 0; i < fileNames.length; ++i) {
-            try {
-                workbook = WorkbookFactory.create(new File(RvceGrabber.getPath(), fileNames[i]));
+            try
+            {
+                workbook = WorkbookFactory.create(new File(Grabber.getPath(), fileNames[i]));
                 FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
                 formulaEvaluator.evaluateAll();
                 university.put(fileNames[i].replaceAll(".xls", ""), getBatchRecord(workbook));
@@ -74,6 +85,7 @@ public class ExcelToJson {
         }
         return university;
     }
+
     private void calculateAverage() {
         HSSFWorkbook workbook=null;
         FileInputStream fileInputStream;
@@ -81,7 +93,7 @@ public class ExcelToJson {
         File excelFile;
         for(int i=0;i<fileNames.length;++i)
         {
-            excelFile=new File(RvceGrabber.getPath(),fileNames[i]);
+            excelFile=new File(Grabber.getPath(),fileNames[i]);
             try{
                 fileInputStream=new FileInputStream(excelFile);
                 workbook=new HSSFWorkbook(fileInputStream);

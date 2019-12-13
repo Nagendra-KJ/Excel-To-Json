@@ -11,9 +11,12 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 abstract class Grabber implements ActionListener {
     private static String path;
+    private String collegeName;
     FirefoxDriver driver;
     private JLabel usnMsg;
     final void getResult() throws IOException {
@@ -24,6 +27,9 @@ abstract class Grabber implements ActionListener {
     abstract  void writeToFile(Record student) throws IOException;
     private void initialise() {
         //Sets up the webdriver to run without opening the window or without using any gpu facilities
+        collegeName="RVCE";
+        if(this.getClass().getSimpleName().equals("MsritGrabber"))
+            collegeName="MSRIT";
         setPath();
         setUI();
         FirefoxOptions options = new FirefoxOptions();
@@ -119,10 +125,16 @@ abstract class Grabber implements ActionListener {
         else
             System.exit(new ExitStatus().EXIT_WITHOUT_PATH);
         path = file.getAbsolutePath();
-        path = path + "\\";
+        path = path + File.separator + collegeName;
+        File directory=new File(path);
+        if(!directory.mkdir())
+            System.out.println("Folder creation issue");
+        path= directory.getAbsolutePath();
+        path=path+File.separator;
     }
 
-    static String getPath() {
+    static String getPath()
+    {
         return path;
     }
 
@@ -130,13 +142,19 @@ abstract class Grabber implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         driver.close();
         String[] fileNames = {"Semester 1.xls", "Semester 2.xls", "Semester 3.xls","Semester 4.xls",
-                "Semester 5.xls","Semester 6.xls","Semester 7.xls","Semester 8.xls"};        for (String fileName : fileNames) {
+                "Semester 5.xls","Semester 6.xls","Semester 7.xls","Semester 8.xls"};
+        for (String fileName : fileNames)
+        {
             File deleteFile = new File(path, fileName);
             if (deleteFile.exists())
-            if(!deleteFile.delete())
-                setUsnMsg("Unable to delete file "+deleteFile.getName());
-
+                if(!deleteFile.delete())
+                    setUsnMsg("Unable to delete file "+deleteFile.getName());
         }
-        System.exit(new ExitStatus().EXIT_ON_CANCEL);
+        Path folderPath = Paths.get(path).getParent();
+        File deleteFolder=new File(folderPath.toString(),collegeName);
+        if(deleteFolder.exists())
+            if(!deleteFolder.delete())
+                System.out.println("Unable to delete folder"+deleteFolder.getName());
+       System.exit(new ExitStatus().EXIT_ON_CANCEL);
     }
 }

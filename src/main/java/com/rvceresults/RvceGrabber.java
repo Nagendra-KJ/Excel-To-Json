@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -111,7 +112,8 @@ class RvceGrabber extends Grabber {
                 course.setName(course.getName().trim());
                 p = Pattern.compile("[A-Z]$");
                 m = p.matcher(courseData);
-                if (m.find()) {
+                if (m.find())
+                {
                     course.setGrade(m.group());
                     student.addCourse(course);
                 }
@@ -155,7 +157,7 @@ class RvceGrabber extends Grabber {
                 break;
             }
         }
-        if(year<19)
+        if(year<currentDiplomaYear())
             getDiplomaResult(department,year+1);
     }
     void getBatchResult(int year) throws IOException {
@@ -167,8 +169,8 @@ class RvceGrabber extends Grabber {
 
     void getCollegeResult() throws IOException {
         //Gets the result of the entire college by cycling through the results of MIN_BATCH to MAX_BATCH
-        int MIN_BATCH = 15;
-        int MAX_BATCH = 18;
+        int MAX_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 -1;
+        int MIN_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 -4;
         for (int i = MIN_BATCH; i <= MAX_BATCH; ++i)
             getBatchResult(i);
     }
@@ -243,6 +245,11 @@ class RvceGrabber extends Grabber {
                 break;
             }
         }
+    }
+
+    private int currentDiplomaYear()
+    {
+        return Calendar.getInstance().get(Calendar.YEAR) % 100 -1;
     }
 
 }
