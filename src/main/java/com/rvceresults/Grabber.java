@@ -1,7 +1,9 @@
 package com.rvceresults;
 
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.*;
+import org.json.simple.JSONObject;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 
@@ -9,20 +11,28 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-abstract class Grabber implements ActionListener {
+abstract class Grabber implements ActionListener{
     private static String path;
     private String collegeName;
     FirefoxDriver driver;
     private JLabel usnMsg;
+    private JFrame mainWindow;
+    private String[] fileNames = {"Semester 1.xls", "Semester 2.xls", "Semester 3.xls","Semester 4.xls",
+                                    "Semester 5.xls","Semester 6.xls","Semester 7.xls","Semester 8.xls"};
+    private Row headerRow;
+
     final void getResult() throws IOException {
         initialise();
         getCollegeResult();
         driver.close();
+        calculateAverage();
+        writeToJSONFile();
+        usnMsg.setText("Program will now exit");
+        mainWindow.dispose();
     }
     abstract  void writeToFile(Record student) throws IOException;
     private void initialise() {
@@ -40,7 +50,7 @@ abstract class Grabber implements ActionListener {
 
     private void setUI() {
         //The layout is that of a GridBag inside a JPanel Container. The constraints help to position the objects
-        JFrame mainWindow = new JFrame("Result Grabber");
+        mainWindow = new JFrame("Result Grabber");
         Container mainLayout = mainWindow.getContentPane();
         mainLayout.setLayout(new GridBagLayout());
         GridBagConstraints constr = new GridBagConstraints();
@@ -156,5 +166,97 @@ abstract class Grabber implements ActionListener {
             if(!deleteFolder.delete())
                 System.out.println("Unable to delete folder"+deleteFolder.getName());
        System.exit(new ExitStatus().EXIT_ON_CANCEL);
+    }
+
+    private void calculateAverage() {
+        HSSFWorkbook workbook=null;
+        FileInputStream fileInputStream;
+        FileOutputStream fileOutputStream;
+        File excelFile;
+        for (String fileName : fileNames) {
+            excelFile = new File(Grabber.getPath(), fileName);
+            try {
+                fileInputStream = new FileInputStream(excelFile);
+                workbook = new HSSFWorkbook(fileInputStream);
+                for (int j = 0; j < workbook.getNumberOfSheets(); ++j) {
+                    HSSFSheet worksheet = (HSSFSheet) workbook.getSheetAt(j);
+                    int nRows = worksheet.getPhysicalNumberOfRows();
+                    Row avgRow = worksheet.createRow(worksheet.getLastRowNum() + 1);
+                    avgRow.createCell(0).setCellValue("AVERAGE");
+                    avgRow.createCell(1).setCellValue("AVERAGE");
+                    Row headerRow = worksheet.getRow(0);
+                    Cell cgpaCell = headerRow.getCell(headerRow.getLastCellNum() - 2);
+                    char cgpaLetter = cgpaCell.getAddress().toString().charAt(0);
+                    String formula = "";
+                    formula = "AVERAGE(" + cgpaLetter + "2:" + cgpaLetter + (nRows) + ")";
+                    Cell avgCCell = avgRow.createCell(headerRow.getLastCellNum() - 2);
+                    avgCCell.setCellType(CellType.FORMULA);
+                    avgCCell.setCellFormula(formula);
+                }
+                fileOutputStream = new FileOutputStream(excelFile);
+                workbook.write(fileOutputStream);
+                fileOutputStream.close();
+                workbook.close();
+                fileInputStream.close();
+            } catch (IOException ignored) {
+            }
+        }
+
+    }
+
+    private void writeToJSONFile() throws IOException
+    {
+        FileWriter fileWriter = new FileWriter(new File(Grabber.getPath(), "dataset.json"));
+        getUniversityRecord().writeJSONString(fileWriter);
+        fileWriter.close();
+    }
+
+    private JSONObject getStudentRecord(Row studentRow)
+    {
+        JSONObject record = new JSONObject();
+        for (int i = 1; i < headerRow.getPhysicalNumberOfCells(); ++i)
+        {
+            Cell dataCell=studentRow.getCell(i);
+            if(dataCell!=null)
+            {
+                 if (dataCell.getCellType() == CellType.STRING)
+                    record.put(headerRow.getCell(i).getStringCellValue(), dataCell.getStringCellValue());
+                else if (dataCell.getCellType() == CellType.NUMERIC ||
+                        dataCell.getCellType() == CellType.FORMULA)
+                    record.put(headerRow.getCell(i).getStringCellValue(), dataCell.getNumericCellValue());
+            }
+        }
+        return record;
+    }
+
+    private JSONObject getDepartmentRecord(Sheet departmentSheet) {
+        JSONObject department = new JSONObject();
+        headerRow = departmentSheet.getRow(0);
+        for (int i = 1; i < departmentSheet.getPhysicalNumberOfRows(); ++i)
+            department.put(departmentSheet.getRow(i).getCell(0).getStringCellValue(), getStudentRecord(departmentSheet.getRow(i)));
+        return department;
+    }
+
+    private JSONObject getBatchRecord(Workbook year) {
+        JSONObject batch = new JSONObject();
+        for (int i = 0; i < year.getNumberOfSheets(); ++i)
+            batch.put(year.getSheetAt(i).getSheetName(), getDepartmentRecord(year.getSheetAt(i)));
+        return batch;
+    }
+
+    private JSONObject getUniversityRecord() throws IOException {
+
+        JSONObject university = new JSONObject();
+        Workbook workbook = null;
+        for (String fileName : fileNames) {
+            try {
+                workbook = WorkbookFactory.create(new File(Grabber.getPath(), fileName));
+                FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
+                formulaEvaluator.evaluateAll();
+                university.put(fileName.replaceAll(".xls", ""), getBatchRecord(workbook));
+            } catch (FileNotFoundException ignored) {
+            }
+        }
+        return university;
     }
 }

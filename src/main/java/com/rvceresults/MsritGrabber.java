@@ -125,7 +125,6 @@ class MsritGrabber extends Grabber {
     {
         JPanel mainWindow = new JPanel();
         Box box = Box.createVerticalBox();
-
         BufferedImage img=ImageIO.read(captchaImg);
         JLabel imgLabel=new JLabel();
         imgLabel.setSize(new Dimension(750,500));
@@ -159,6 +158,8 @@ class MsritGrabber extends Grabber {
                     "Please enter the captcha you see in the screen", JOptionPane.OK_CANCEL_OPTION);
         if(result==JOptionPane.OK_OPTION)
             solvedCaptcha=captchaField.getText();
+        else if(result==JOptionPane.CANCEL_OPTION)
+            System.exit(new ExitStatus().EXIT_ON_CANCEL);
     }
     @Override
     void login(String usn)  {
