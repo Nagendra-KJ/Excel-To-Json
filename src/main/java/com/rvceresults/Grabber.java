@@ -1,5 +1,6 @@
 package com.rvceresults;
 
+import com.google.common.collect.HashBiMap;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
@@ -14,15 +15,13 @@ import java.awt.event.ActionListener;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 
 abstract class Grabber implements ActionListener
 {
     private static String path;
     private final String[] fileNames = {"Semester 1.xls", "Semester 2.xls", "Semester 3.xls", "Semester 4.xls",
             "Semester 5.xls", "Semester 6.xls", "Semester 7.xls", "Semester 8.xls"};
-    private final HashMap<String, Integer> gradeLookUp = new HashMap<>();
-    private final HashMap<Integer, String> reverseLookUp = new HashMap<>();
+    private final HashBiMap<String, Integer> gradeLookUp = HashBiMap.create();
     FirefoxDriver driver;
     private String collegeName;
     private JLabel usnMsg;
@@ -341,10 +340,11 @@ abstract class Grabber implements ActionListener
             Integer gradeWeight = gradeLookUp.get(grade);
             if (gradeWeight == null)
                 gradeWeight = gradeLookUp.get("F");
+            assert gradeWeight != null;
             sum += gradeWeight;
         }
         int average = Math.round((float) sum / numStudents);
-        String averageGrade = reverseLookUp.get(average);
+        String averageGrade = gradeLookUp.inverse().get(average);
         if (avgRow.getCell(cNum) == null)
             avgRow.createCell(cNum);
         avgRow.getCell(cNum).setCellValue(averageGrade);
@@ -359,12 +359,6 @@ abstract class Grabber implements ActionListener
         gradeLookUp.put("D", 6);
         gradeLookUp.put("E", 5);
         gradeLookUp.put("F", 4);
-        reverseLookUp.put(10, "S");
-        reverseLookUp.put(9, "A");
-        reverseLookUp.put(8, "B");
-        reverseLookUp.put(7, "C");
-        reverseLookUp.put(6, "D");
-        reverseLookUp.put(5, "E");
-        reverseLookUp.put(4, "F");
     }
+
 }
