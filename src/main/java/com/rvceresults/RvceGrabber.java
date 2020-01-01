@@ -27,7 +27,8 @@ import java.util.regex.Pattern;
 
 class RvceGrabber extends Grabber
 {
-    void login(String usn) {
+    void login(String usn)
+    {
         /*For each student, the driver opens the results.rvce.edu.in webpage, enters the USN, gets the
         captcha text from the page, solves it and enters it into the field and then hits submit.
         If the student exists, his results page is opened, otherwise, an empty page is opened
@@ -51,7 +52,8 @@ class RvceGrabber extends Grabber
 
     }
 
-    Record getStudentDetails() {
+    Record getStudentDetails()
+    {
         /*The result of the specified student is got by getting the results table from the page and then
         extracting each field by using regEx. This data is stored in a records object that contains all
         the necessary fields of the student. This record is then written to the Excel file.
@@ -60,7 +62,8 @@ class RvceGrabber extends Grabber
         float gpa = 0;
         int sem = 0;
         List<WebElement> details = driver.findElements(By.xpath("//*[@id=\"no-more-tables\"]/table[1]/tbody/tr[1]"));
-        try {
+        try
+        {
             String data = details.get(0).getText();
             Pattern p = Pattern.compile("[1-8]RV1[5-8][A-Z][A-Z]([0-9]){3}");
             Matcher m = p.matcher(data);
@@ -81,23 +84,27 @@ class RvceGrabber extends Grabber
             if (m.find())
                 sem = Integer.parseInt(m.group().trim());
             return new Record(branch, usn, name, gpa, sem);
-        } catch (IndexOutOfBoundsException e) {
+        } catch (IndexOutOfBoundsException e)
+        {
             return null;
         }
     }
 
-    void getCourseDetails(Record student) {
+    void getCourseDetails(Record student)
+    {
         /*Each course detail of the specified student is got from the webpage by using xPath and stored in the
         same record of the student. All this is finally written to the Excel file. The do-while loop goes through
         each row of the table and gets the details of the student.
          */
         int i = 0;
         List<WebElement> table;
-        do {
+        do
+        {
             Course course = new Course();
             ++i;
             table = driver.findElements(By.xpath("//*[@id=\"no-more-tables\"]/table[2]/tbody/tr[" + i + "]"));
-            try {
+            try
+            {
                 String courseData = table.get(0).getText();
                 Pattern p = Pattern.compile("\\d{2}([A-Z]){2,3}([0-9]){1,2}([A-Z]){0,2}");
                 Matcher m = p.matcher(courseData);
@@ -105,7 +112,8 @@ class RvceGrabber extends Grabber
                     course.setCode(m.group().trim());
                 p = Pattern.compile("[A-Z-0-9]+ ");
                 m = p.matcher(courseData);
-                if (m.find()) {
+                if (m.find())
+                {
                     while (m.find())
                         course.setName(course.getName() + m.group());
                 }
@@ -117,18 +125,21 @@ class RvceGrabber extends Grabber
                     course.setGrade(m.group());
                     student.addCourse(course);
                 }
-            } catch (IndexOutOfBoundsException e) {
+            } catch (IndexOutOfBoundsException e)
+            {
                 break;
             }
         } while (!table.get(0).getText().equals("Go Back"));
     }
 
-    boolean getStudentResult(String usn) throws IOException {
+    boolean getStudentResult(String usn) throws IOException
+    {
         //Gets all the details of a student with the given USN. Returns false if the student does not exist.
         boolean isNotSuccess = true;
         login(usn);
         Record student = getStudentDetails();
-        if (student != null) {
+        if (student != null)
+        {
             setUsnMsg(usn);
             getCourseDetails(student);
             writeToFile(student);
@@ -137,12 +148,14 @@ class RvceGrabber extends Grabber
         return isNotSuccess;
     }
 
-    void getDepartmentResult(String department, int year) throws IOException {
+    void getDepartmentResult(String department, int year) throws IOException
+    {
         /*Gets the result of the entire department, cycles through the USNs 000-200. End of department is
         signified when more than 10 continuous USNs do not exist.
          */
         int invalidCount = 0;
-        for (int i = 1; i < 200; ++i) {
+        for (int i = 1; i < 200; ++i)
+        {
             String usn = "1RV" +
                     year +
                     department +
@@ -151,31 +164,36 @@ class RvceGrabber extends Grabber
                 ++invalidCount;
             else
                 invalidCount = 0;
-            if (invalidCount >= 10) {
+            if (invalidCount >= 10)
+            {
                 if (usn.contains("010"))
-                    this.setUsnMsg("Department Results not yet announced for "+department);
+                    this.setUsnMsg("Department Results not yet announced for " + department);
                 break;
             }
         }
-        if(year<currentDiplomaYear())
-            getDiplomaResult(department,year+1);
+        if (year < currentDiplomaYear())
+            getDiplomaResult(department, year + 1);
     }
-    void getBatchResult(int year) throws IOException {
+
+    void getBatchResult(int year) throws IOException
+    {
         //The result of an entire batch is obtained by getting the results of each of batches in the list.
         String[] branches = {"AS", "BT", "CH", "CV", "CS", "EE", "EC", "EI", "IM", "IS", "ME", "TE"};
         for (String branch : branches)
             getDepartmentResult(branch, year);
     }
 
-    void getCollegeResult() throws IOException {
+    void getCollegeResult() throws IOException
+    {
         //Gets the result of the entire college by cycling through the results of MIN_BATCH to MAX_BATCH
-        int MAX_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 -1;
-        int MIN_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 -4;
+        int MAX_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 - 1;
+        int MIN_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 - 4;
         for (int i = MIN_BATCH; i <= MAX_BATCH; ++i)
             getBatchResult(i);
     }
 
-    void writeToFile(Record student) throws IOException {
+    void writeToFile(Record student) throws IOException
+    {
         /*HSSFWorkbook is the format of Excel 1997-2007 Workbooks. Each workbook contains the results of
         that semester of all the branches. Each sheet of the work book contains the results of that branch
         If the workbook, or any worksheet is already not present, it is created. Each row contains the
@@ -186,9 +204,10 @@ class RvceGrabber extends Grabber
         File excelFile = new File(filepath);
         HSSFWorkbook workbook;
         FileOutputStream fileOutputStream;
-        String rankFormula="RANK($";
+        String rankFormula = "RANK($";
         char rowAlphabet;
-        if (!excelFile.exists()) {
+        if (!excelFile.exists())
+        {
             if (!excelFile.createNewFile())
                 return;
             workbook = new HSSFWorkbook();
@@ -197,13 +216,15 @@ class RvceGrabber extends Grabber
             fileOutputStream = new FileOutputStream(excelFile);
             workbook.write(fileOutputStream);
             fileOutputStream.close();
-        } else {
+        } else
+        {
             FileInputStream fileInputStream = new FileInputStream(excelFile);
             workbook = new HSSFWorkbook(fileInputStream);
             fileInputStream.close();
         }
         HSSFSheet worksheet = workbook.getSheet(student.getBranch());
-        if (worksheet == null) {
+        if (worksheet == null)
+        {
             worksheet = workbook.createSheet(student.getBranch());
             createHeader(worksheet, student);
         }
@@ -212,13 +233,13 @@ class RvceGrabber extends Grabber
         dataRow.createCell(1).setCellValue(student.getName());
         for (int i = 0; i < student.getCourseLength(); ++i)
             dataRow.createCell(i + 2).setCellValue(student.getCourse(i).getGrade());
-        Cell gpaCell=dataRow.createCell(dataRow.getLastCellNum());
+        Cell gpaCell = dataRow.createCell(dataRow.getLastCellNum());
         gpaCell.setCellValue(student.getSgpa());
         dataRow.createCell(dataRow.getLastCellNum()).setCellValue(student.getSgpa());
-        rowAlphabet=gpaCell.getAddress().toString().charAt(0);
-        Cell rankCell=dataRow.createCell(dataRow.getLastCellNum());
-        rankFormula=rankFormula+gpaCell.getAddress().toString()+
-                ",$"+rowAlphabet+"$2:$"+rowAlphabet+"$250)";
+        rowAlphabet = gpaCell.getAddress().toString().charAt(0);
+        Cell rankCell = dataRow.createCell(dataRow.getLastCellNum());
+        rankFormula = rankFormula + gpaCell.getAddress().toString() +
+                ",$" + rowAlphabet + "$2:$" + rowAlphabet + "$250)";
         rankCell.setCellFormula(rankFormula);
         fileOutputStream = new FileOutputStream(excelFile);
         workbook.write(fileOutputStream);
@@ -226,12 +247,14 @@ class RvceGrabber extends Grabber
         workbook.close();
     }
 
-    private void getDiplomaResult(String department,int year) throws IOException {
+    private void getDiplomaResult(String department, int year) throws IOException
+    {
         /*Gets the result of the diploma students in the department, cycles through the USNs 400-500. End of department is
         signified when more than 10 continuous USNs do not exist.
          */
         int invalidCount = 0;
-        for (int i = 400; i < 500; ++i) {
+        for (int i = 400; i < 500; ++i)
+        {
             String usn = "1RV" +
                     year +
                     department +
@@ -239,9 +262,10 @@ class RvceGrabber extends Grabber
             if (getStudentResult(usn))
                 ++invalidCount;
             else invalidCount = 0;
-            if (invalidCount >= 10) {
+            if (invalidCount >= 10)
+            {
                 if (usn.contains("010"))
-                    this.setUsnMsg("No diploma students in  "+department);
+                    this.setUsnMsg("No diploma students in  " + department);
                 break;
             }
         }
@@ -249,6 +273,6 @@ class RvceGrabber extends Grabber
 
     private int currentDiplomaYear()
     {
-        return Calendar.getInstance().get(Calendar.YEAR) % 100 -1;
+        return Calendar.getInstance().get(Calendar.YEAR) % 100 - 1;
     }
 }

@@ -5,13 +5,13 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.openqa.selenium.*;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import java.awt.*;
 import java.awt.Dimension;
+import java.awt.*;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.image.BufferedImage;
@@ -19,8 +19,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,11 +28,12 @@ class MsritGrabber extends Grabber
 {
     private WebElement usnField, captchaField, btnSubmit;
     private String solvedCaptcha;
-    private Map<String,String> depMap;
-    private Map<String,Integer> courseMap;
+    private Map<String, String> depMap;
+    private Map<String, Integer> courseMap;
 
     @Override
-    void createHeader(Sheet worksheet, Record student) {
+    void createHeader(Sheet worksheet, Record student)
+    {
         /* The first row of each sheet in the Excel file contains the name of each field. This function
         populates that row of each sheet
          */
@@ -42,7 +43,7 @@ class MsritGrabber extends Grabber
         headerRow.createCell(headerRow.getLastCellNum()).setCellValue("SGPA");
         headerRow.createCell(headerRow.getLastCellNum()).setCellValue("CGPA");
         headerRow.createCell(headerRow.getLastCellNum()).setCellValue("Rank");
-        for(int i=0;i<student.getCourseLength();++i)
+        for (int i = 0; i < student.getCourseLength(); ++i)
         {
             courseMap.put(student.getCourse(i).getCode(), (int) headerRow.getLastCellNum());
             headerRow.createCell(headerRow.getLastCellNum()).
@@ -51,7 +52,8 @@ class MsritGrabber extends Grabber
     }
 
     @Override
-    void writeToFile(Record student) throws IOException {
+    void writeToFile(Record student) throws IOException
+    {
         /*HSSFWorkbook is the format of Excel 1997-2007 Workbooks. Each workbook contains the results of
         that semester of all the branches. Each sheet of the work book contains the results of that branch
         If the workbook, or any worksheet is already not present, it is created. Each row contains the
@@ -62,9 +64,10 @@ class MsritGrabber extends Grabber
         File excelFile = new File(filepath);
         HSSFWorkbook workbook;
         FileOutputStream fileOutputStream;
-        String rankFormula="RANK($";
+        String rankFormula = "RANK($";
         char rowAlphabet;
-        if (!excelFile.exists()) {
+        if (!excelFile.exists())
+        {
             if (!excelFile.createNewFile())
                 return;
             workbook = new HSSFWorkbook();
@@ -73,13 +76,15 @@ class MsritGrabber extends Grabber
             fileOutputStream = new FileOutputStream(excelFile);
             workbook.write(fileOutputStream);
             fileOutputStream.close();
-        } else {
+        } else
+        {
             FileInputStream fileInputStream = new FileInputStream(excelFile);
             workbook = new HSSFWorkbook(fileInputStream);
             fileInputStream.close();
         }
         HSSFSheet worksheet = workbook.getSheet(student.getBranch());
-        if (worksheet == null) {
+        if (worksheet == null)
+        {
             worksheet = workbook.createSheet(student.getBranch());
             createHeader(worksheet, student);
         }
@@ -87,21 +92,21 @@ class MsritGrabber extends Grabber
         dataRow.createCell(0).setCellValue(student.getUsn());
         dataRow.createCell(1).setCellValue(student.getName());
         dataRow.createCell(dataRow.getLastCellNum()).setCellValue(student.getSgpa());
-        Cell gpaCell=dataRow.createCell(dataRow.getLastCellNum());
+        Cell gpaCell = dataRow.createCell(dataRow.getLastCellNum());
         gpaCell.setCellValue(student.getCgpa());
-        rowAlphabet=gpaCell.getAddress().toString().charAt(0);
-        Cell rankCell=dataRow.createCell(dataRow.getLastCellNum());
-        rankFormula=rankFormula+gpaCell.getAddress().toString()+
-                ",$"+rowAlphabet+"$2:$"+rowAlphabet+"$250)";
+        rowAlphabet = gpaCell.getAddress().toString().charAt(0);
+        Cell rankCell = dataRow.createCell(dataRow.getLastCellNum());
+        rankFormula = rankFormula + gpaCell.getAddress().toString() +
+                ",$" + rowAlphabet + "$2:$" + rowAlphabet + "$250)";
         rankCell.setCellFormula(rankFormula);
         for (int i = 0; i < student.getCourseLength(); ++i)
         {
-            Integer courseColumn=courseMap.get(student.getCourse(i).getCode());
-            if(courseColumn==null)
+            Integer courseColumn = courseMap.get(student.getCourse(i).getCode());
+            if (courseColumn == null)
             {
-                Row headerRow=worksheet.getRow(0);
-                courseColumn=(int)headerRow.getLastCellNum();
-                courseMap.put(student.getCourse(i).getCode(),(int)headerRow.getLastCellNum());
+                Row headerRow = worksheet.getRow(0);
+                courseColumn = (int) headerRow.getLastCellNum();
+                courseMap.put(student.getCourse(i).getCode(), (int) headerRow.getLastCellNum());
                 headerRow.createCell(headerRow.getLastCellNum())
                         .setCellValue(student.getCourse(i).getName());
             }
@@ -114,7 +119,8 @@ class MsritGrabber extends Grabber
 
     }
 
-    private void breakCaptcha() throws  IOException {
+    private void breakCaptcha() throws IOException
+    {
         String resultsUrl = "http://exam.msrit.edu/index.php";
         driver.get(resultsUrl);
         File captchaImg;
@@ -122,30 +128,33 @@ class MsritGrabber extends Grabber
         setUI(captchaImg);
     }
 
-    private void setUI(File captchaImg) throws  IOException
+    private void setUI(File captchaImg) throws IOException
     {
         JPanel mainWindow = new JPanel();
         Box box = Box.createVerticalBox();
-        BufferedImage img=ImageIO.read(captchaImg);
-        JLabel imgLabel=new JLabel();
-        imgLabel.setSize(new Dimension(750,500));
-        ImageIcon imgIcon=new ImageIcon(img);
-        Image image=imgIcon.getImage().getScaledInstance(imgLabel.getWidth(),imgLabel.getHeight(),Image.SCALE_SMOOTH);
+        BufferedImage img = ImageIO.read(captchaImg);
+        JLabel imgLabel = new JLabel();
+        imgLabel.setSize(new Dimension(750, 500));
+        ImageIcon imgIcon = new ImageIcon(img);
+        Image image = imgIcon.getImage().getScaledInstance(imgLabel.getWidth(), imgLabel.getHeight(), Image.SCALE_SMOOTH);
         imgLabel.setIcon(new ImageIcon(image));
         box.add(imgLabel);
 
 
-        final JTextField captchaField=new JTextField("Enter the captcha you see in the image here");
-        captchaField.addFocusListener(new FocusListener() {
+        final JTextField captchaField = new JTextField("Enter the captcha you see in the image here");
+        captchaField.addFocusListener(new FocusListener()
+        {
             @Override
-            public void focusGained(FocusEvent e) {
-                if(captchaField.getText().equals("Enter the captcha you see in the image here"))
+            public void focusGained(FocusEvent e)
+            {
+                if (captchaField.getText().equals("Enter the captcha you see in the image here"))
                     captchaField.setText("");
             }
 
             @Override
-            public void focusLost(FocusEvent e) {
-                if(captchaField.getText().isEmpty())
+            public void focusLost(FocusEvent e)
+            {
+                if (captchaField.getText().isEmpty())
                     captchaField.setText("Enter the captcha you see in the image here");
 
             }
@@ -155,38 +164,41 @@ class MsritGrabber extends Grabber
 
         mainWindow.add(box);
 
-        int result=JOptionPane.showConfirmDialog(null,mainWindow,
-                    "Please enter the captcha you see in the screen", JOptionPane.OK_CANCEL_OPTION);
-        if(result==JOptionPane.OK_OPTION)
-            solvedCaptcha=captchaField.getText();
-        else if(result==JOptionPane.CANCEL_OPTION)
+        int result = JOptionPane.showConfirmDialog(null, mainWindow,
+                "Please enter the captcha you see in the screen", JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION)
+            solvedCaptcha = captchaField.getText();
+        else if (result == JOptionPane.CANCEL_OPTION)
             System.exit(new ExitStatus().EXIT_ON_CANCEL);
     }
+
     @Override
-    void login(String usn)  {
+    void login(String usn)
+    {
         if (solvedCaptcha == null)
             try
             {
                 breakCaptcha();
                 initialisesMaps();
-            }catch(IOException e)
+            } catch (IOException e)
             {
                 e.printStackTrace();
             }
-        if(solvedCaptcha==null)
+        if (solvedCaptcha == null)
             return;
         getDomElements();
         usnField.sendKeys(usn);
         captchaField.sendKeys(solvedCaptcha);
         btnSubmit.click();
-        if(alertPresent())
+        if (alertPresent())
         {
-            solvedCaptcha=null;
+            solvedCaptcha = null;
             login(usn);
         }
     }
 
-    private void initialisesMaps() {
+    private void initialisesMaps()
+    {
         depMap = new HashMap<>();
         courseMap = new HashMap<>();
         depMap.put("AT", "Architecture");
@@ -204,13 +216,14 @@ class MsritGrabber extends Grabber
         depMap.put("TE", "Telecommunications");
     }
 
-    private boolean alertPresent() {
+    private boolean alertPresent()
+    {
         try
         {
-            Alert alert=driver.switchTo().alert();
+            Alert alert = driver.switchTo().alert();
             alert.dismiss();
             return true;
-        }catch(NoAlertPresentException e)
+        } catch (NoAlertPresentException e)
         {
             return false;
         }
@@ -229,8 +242,9 @@ class MsritGrabber extends Grabber
         String usn = "", branch, name = "";
         float sgpa = 0;
         int sem;
-        float cgpa=0;
-        try {
+        float cgpa = 0;
+        try
+        {
             WebElement personalDetails = driver.findElementByClassName("orange");
 
             Scanner scan = new Scanner(personalDetails.getText());
@@ -247,48 +261,54 @@ class MsritGrabber extends Grabber
             m = p.matcher(academicDetails.get(3).getText());
             if (m.find())
                 cgpa = Float.parseFloat(m.group().trim());
-            if(sgpa==0 && cgpa==0)
+            if (sgpa == 0 && cgpa == 0)
             {
-                WebElement footerDetails=driver.findElementByClassName("footertab");
+                WebElement footerDetails = driver.findElementByClassName("footertab");
                 p = Pattern.compile("([0-9].)([0-9]){1,2}");
                 m = p.matcher(footerDetails.getText());
-                if(m.find())
-                    sgpa=Float.parseFloat(m.group().trim());
+                if (m.find())
+                    sgpa = Float.parseFloat(m.group().trim());
             }
             sem = (19 - Integer.parseInt(usn.substring(3, 5))) * 2 - 1;
             branch = depMap.get(usn.substring(5, 7));
             return new Record(branch, usn, name, sgpa, cgpa, sem);
-        }catch(NoSuchElementException e){return null;}
+        } catch (NoSuchElementException e)
+        {
+            return null;
+        }
     }
 
     @Override
     void getCourseDetails(Record student)
     {
-        List<WebElement> oddCourses=driver.findElementsByClassName("odd");
-        extractCourseDetails(oddCourses,student);
-        List<WebElement> evenCourses=driver.findElementsByClassName("even");
-        extractCourseDetails(evenCourses,student);
+        List<WebElement> oddCourses = driver.findElementsByClassName("odd");
+        extractCourseDetails(oddCourses, student);
+        List<WebElement> evenCourses = driver.findElementsByClassName("even");
+        extractCourseDetails(evenCourses, student);
     }
-    private void extractCourseDetails(List<WebElement> courseList,Record student)
+
+    private void extractCourseDetails(List<WebElement> courseList, Record student)
     {
         Scanner scan;
-        for (WebElement singleCourse : courseList) {
+        for (WebElement singleCourse : courseList)
+        {
             scan = new Scanner(singleCourse.getText());
             scan.useDelimiter(" ");
-            Course course=new Course();
+            Course course = new Course();
             while (scan.hasNext())
             {
-                String code=scan.next();
+                String code = scan.next();
                 course.setCode(code);
-                StringBuilder courseName=new StringBuilder();
-                while(!scan.hasNextInt()) {
+                StringBuilder courseName = new StringBuilder();
+                while (!scan.hasNextInt())
+                {
                     courseName.append(scan.next());
                     courseName.append(" ");
                 }
                 course.setName(courseName.toString());
-                while(scan.hasNextInt())
+                while (scan.hasNextInt())
                     scan.next();
-                if(scan.hasNext())
+                if (scan.hasNext())
                     course.setGrade(scan.next());
             }
             student.addCourse(course);
@@ -302,12 +322,13 @@ class MsritGrabber extends Grabber
         boolean isNotSuccess = true;
         login(usn);
         Record student = getStudentDetails();
-        if (student != null) {
+        if (student != null)
+        {
             setUsnMsg(usn);
             getCourseDetails(student);
             sortCourses(student);
-            int sem=getStudentSem(student);
-            if(student.getSem()!=sem)
+            int sem = getStudentSem(student);
+            if (student.getSem() != sem)
                 student.setSem(sem);
             writeToFile(student);
             isNotSuccess = false;
@@ -316,11 +337,14 @@ class MsritGrabber extends Grabber
         return isNotSuccess;
     }
 
-    private void sortCourses(Record student) {
-        List<Course> subjectList=student.getSubjects();
-        Collections.sort(subjectList, new Comparator<Course>() {
+    private void sortCourses(Record student)
+    {
+        List<Course> subjectList = student.getSubjects();
+        Collections.sort(subjectList, new Comparator<Course>()
+        {
             @Override
-            public int compare(Course course1, Course course2) {
+            public int compare(Course course1, Course course2)
+            {
                 return course1.getCode().compareToIgnoreCase(course2.getCode());
             }
         });
@@ -328,25 +352,25 @@ class MsritGrabber extends Grabber
 
     private int getStudentSem(Record student)
     {
-        String code=student.getCourse(student.getCourseLength()-1).getCode();
-        for(int i=0;i<student.getCourseLength();++i)
+        String code = student.getCourse(student.getCourseLength() - 1).getCode();
+        for (int i = 0; i < student.getCourseLength(); ++i)
         {
-            if(student.getCourse(i).getCode().contains("L"))
+            if (student.getCourse(i).getCode().contains("L"))
             {
-                code=student.getCourse(i).getCode();
+                code = student.getCourse(i).getCode();
                 break;
             }
         }
-        int sem=0;
-        for(int i=0;i<code.length();++i)
+        int sem = 0;
+        for (int i = 0; i < code.length(); ++i)
         {
-            if(code.charAt(i)>'0' && code.charAt(i)<'9')
+            if (code.charAt(i) > '0' && code.charAt(i) < '9')
             {
-                sem = code.charAt(i)-'0';
+                sem = code.charAt(i) - '0';
                 break;
             }
         }
-         return sem;
+        return sem;
     }
 
 
@@ -357,7 +381,8 @@ class MsritGrabber extends Grabber
         signified when more than 10 continuous USNs do not exist.
          */
         int invalidCount = 0;
-        for (int i = 1; i < 300; ++i) {
+        for (int i = 1; i < 300; ++i)
+        {
             String usn = "1MS" +
                     year +
                     department +
@@ -366,9 +391,10 @@ class MsritGrabber extends Grabber
                 ++invalidCount;
             else
                 invalidCount = 0;
-            if (invalidCount >= 10) {
+            if (invalidCount >= 10)
+            {
                 if (usn.contains("010"))
-                    this.setUsnMsg("Department Results not yet announced for "+department);
+                    this.setUsnMsg("Department Results not yet announced for " + department);
                 break;
             }
         }
@@ -378,7 +404,7 @@ class MsritGrabber extends Grabber
     void getBatchResult(int year) throws IOException
     {
         //The result of an entire batch is obtained by getting the results of each of batches in the list.
-        String[] branches = {"AT", "BT", "CH", "CV", "CS", "EE", "EC", "EI", "IM", "IS", "ME", "ML","TE"};
+        String[] branches = {"AT", "BT", "CH", "CV", "CS", "EE", "EC", "EI", "IM", "IS", "ME", "ML", "TE"};
         for (String branch : branches)
             getDepartmentResult(branch, year);
     }
@@ -387,8 +413,8 @@ class MsritGrabber extends Grabber
     void getCollegeResult() throws IOException
     {
         //Gets the result of the entire college by cycling through the results of MIN_BATCH to MAX_BATCH
-        int MAX_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 -1;
-        int MIN_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 -4;
+        int MAX_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 - 1;
+        int MIN_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 - 4;
         for (int i = MIN_BATCH; i <= MAX_BATCH; ++i)
             getBatchResult(i);
     }

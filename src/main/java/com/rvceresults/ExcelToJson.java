@@ -1,5 +1,6 @@
 package com.rvceresults;
-import java.io.*;
+
+import java.io.IOException;
 
 
 @SuppressWarnings("ALL")
@@ -10,16 +11,18 @@ and is written to dataset.json file.
 
 /*
 @Todo
+0. Refactor to remove duplicities
 1. Add college choice option
 2. Add multi-threading support
 19428353894058 Add AI for MSR lulzkie
  */
 public class ExcelToJson
 {
-        public static void main(String[] args) throws IOException {
-               RvceGrabber rvceGrabber = new RvceGrabber();
-               rvceGrabber.getResult();
-               System.exit(new ExitStatus().EXIT_ON_COMPLETION);
-        }
+    public static void main(String[] args) throws IOException
+    {
+        RvceGrabber rvceGrabber = new RvceGrabber();
+        rvceGrabber.getResult();
+        System.exit(new ExitStatus().EXIT_ON_COMPLETION);
+    }
 }
 
