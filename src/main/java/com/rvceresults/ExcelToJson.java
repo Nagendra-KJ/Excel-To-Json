@@ -8,7 +8,8 @@ Excel sheets, we are calculating the average by the formula. And evaluating the 
 and is written to dataset.json file.
  */
 
-/*Todo
+/*
+@Todo
 1. Add college choice option
 2. Add multi-threading support
 19428353894058 Add AI for MSR lulzkie
@@ -16,11 +17,9 @@ and is written to dataset.json file.
 public class ExcelToJson
 {
         public static void main(String[] args) throws IOException {
-                RvceGrabber RVgrabber=new RvceGrabber();
-                RVgrabber.getResult();
-                Grabber MSRgrabber=new MsritGrabber();
-                MSRgrabber.getResult();
-                System.exit(new ExitStatus().EXIT_ON_COMPLETION);
+               RvceGrabber rvceGrabber = new RvceGrabber();
+               rvceGrabber.getResult();
+               System.exit(new ExitStatus().EXIT_ON_COMPLETION);
         }
 }
 

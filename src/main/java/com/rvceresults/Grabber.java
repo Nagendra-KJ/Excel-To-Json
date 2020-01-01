@@ -14,6 +14,7 @@ import java.awt.event.ActionListener;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 
 abstract class Grabber implements ActionListener{
     private static String path;
@@ -24,15 +25,18 @@ abstract class Grabber implements ActionListener{
     private String[] fileNames = {"Semester 1.xls", "Semester 2.xls", "Semester 3.xls","Semester 4.xls",
                                     "Semester 5.xls","Semester 6.xls","Semester 7.xls","Semester 8.xls"};
     private Row headerRow;
+    private HashMap<String,Integer> gradeLookUp = new HashMap<>();
+    private HashMap<Integer,String> reverseLookUp = new HashMap<>();
 
-    final void getResult() throws IOException {
+    final void getResult() throws IOException
+    {
         initialise();
         getCollegeResult();
         driver.close();
-        calculateAverage();
         writeToJSONFile();
         usnMsg.setText("Program will now exit");
         mainWindow.dispose();
+        calculateAverage();
     }
     abstract  void writeToFile(Record student) throws IOException;
     private void initialise() {
@@ -46,6 +50,7 @@ abstract class Grabber implements ActionListener{
         options.addArguments("--headless");
         options.addArguments("--disable-gpu");
         driver = new FirefoxDriver(options);
+        initGradeLookUp();
     }
 
     private void setUI() {
@@ -168,26 +173,29 @@ abstract class Grabber implements ActionListener{
        System.exit(new ExitStatus().EXIT_ON_CANCEL);
     }
 
-    private void calculateAverage() {
-        HSSFWorkbook workbook=null;
+    private void calculateGPAAverage() {
+        HSSFWorkbook workbook;
         FileInputStream fileInputStream;
         FileOutputStream fileOutputStream;
         File excelFile;
         for (String fileName : fileNames) {
-            excelFile = new File(Grabber.getPath(), fileName);
+            excelFile = new File(getPath(), fileName);
             try {
                 fileInputStream = new FileInputStream(excelFile);
                 workbook = new HSSFWorkbook(fileInputStream);
-                for (int j = 0; j < workbook.getNumberOfSheets(); ++j) {
-                    HSSFSheet worksheet = (HSSFSheet) workbook.getSheetAt(j);
+                for (int j = 0; j < workbook.getNumberOfSheets()-1; ++j) {
+                    HSSFSheet worksheet = workbook.getSheetAt(j);
                     int nRows = worksheet.getPhysicalNumberOfRows();
-                    Row avgRow = worksheet.createRow(worksheet.getLastRowNum() + 1);
+                    Row avgRow = worksheet.getRow(worksheet.getLastRowNum());
+                    if(avgRow.getCell(0).toString().equals("AVERAGE"))
+                        continue;
+                    avgRow = worksheet.createRow(worksheet.getLastRowNum() + 1);
                     avgRow.createCell(0).setCellValue("AVERAGE");
                     avgRow.createCell(1).setCellValue("AVERAGE");
                     Row headerRow = worksheet.getRow(0);
                     Cell cgpaCell = headerRow.getCell(headerRow.getLastCellNum() - 2);
                     char cgpaLetter = cgpaCell.getAddress().toString().charAt(0);
-                    String formula = "";
+                    String formula;
                     formula = "AVERAGE(" + cgpaLetter + "2:" + cgpaLetter + (nRows) + ")";
                     Cell avgCCell = avgRow.createCell(headerRow.getLastCellNum() - 2);
                     avgCCell.setCellType(CellType.FORMULA);
@@ -198,8 +206,7 @@ abstract class Grabber implements ActionListener{
                 fileOutputStream.close();
                 workbook.close();
                 fileInputStream.close();
-            } catch (IOException ignored) {
-            }
+            } catch (IOException ignored) {}
         }
 
     }
@@ -247,7 +254,7 @@ abstract class Grabber implements ActionListener{
     private JSONObject getUniversityRecord() throws IOException {
 
         JSONObject university = new JSONObject();
-        Workbook workbook = null;
+        Workbook workbook;
         for (String fileName : fileNames) {
             try {
                 workbook = WorkbookFactory.create(new File(Grabber.getPath(), fileName));
@@ -258,5 +265,80 @@ abstract class Grabber implements ActionListener{
             }
         }
         return university;
+    }
+
+    private void calculateGradeAverage()
+    {
+        HSSFWorkbook workbook;
+        FileInputStream fileInputStream;
+        FileOutputStream fileOutputStream;
+        File excelFile;
+        for(String fileName:fileNames) {
+            excelFile = new File(getPath(), fileName);
+            try {
+                fileInputStream = new FileInputStream(excelFile);
+                workbook = new HSSFWorkbook(fileInputStream);
+                HSSFSheet worksheet;
+                for(int sheetNum=0;sheetNum<workbook.getNumberOfSheets();++sheetNum) {
+                    worksheet=workbook.getSheetAt(sheetNum);
+                    Row avgRow = worksheet.getRow(worksheet.getLastRowNum());
+                    Row headerRow = worksheet.getRow(0);
+                    int startingColumn = headerRow.getCell(2).getAddress().toString().charAt(0) - 'A';
+                    int endingColumn = headerRow.getCell(headerRow.getLastCellNum() - 3).getAddress().toString().charAt(0) - 'A';
+                    for (int i = startingColumn; i < endingColumn; ++i)
+                        getAverageGrade(i, avgRow, worksheet);
+                }
+                fileOutputStream = new FileOutputStream(excelFile);
+                workbook.write(fileOutputStream);
+                fileOutputStream.close();
+                workbook.close();
+                fileInputStream.close();
+            } catch (IOException ignored) {}
+        }
+    }
+
+    private void calculateAverage()
+    {
+        calculateGPAAverage();
+        calculateGradeAverage();
+    }
+
+    private  void getAverageGrade(int cNum,Row avgRow,Sheet worksheet)
+    {
+        int avgRowNum=avgRow.getRowNum();
+        int numStudents=avgRowNum-1;
+        int sum=0;
+        for(int i=1;i<avgRowNum;++i)
+        {
+            Row currentRow=worksheet.getRow(i);
+            String grade=currentRow.getCell(cNum).getStringCellValue();
+            Integer gradeWeight = gradeLookUp.get(grade);
+            if(gradeWeight==null)
+                gradeWeight=gradeLookUp.get("F");
+            sum+= gradeWeight;
+        }
+        int average=Math.round((float)sum/numStudents);
+        String averageGrade=reverseLookUp.get(average);
+        if(avgRow.getCell(cNum)==null)
+            avgRow.createCell(cNum);
+        avgRow.getCell(cNum).setCellValue(averageGrade);
+    }
+
+    private void initGradeLookUp()
+    {
+        gradeLookUp.put("S",10);
+        gradeLookUp.put("A",9);
+        gradeLookUp.put("B",8);
+        gradeLookUp.put("C",7);
+        gradeLookUp.put("D",6);
+        gradeLookUp.put("E",5);
+        gradeLookUp.put("F",4);
+        reverseLookUp.put(10,"S");
+        reverseLookUp.put(9,"A");
+        reverseLookUp.put(8,"B");
+        reverseLookUp.put(7,"C");
+        reverseLookUp.put(6,"D");
+        reverseLookUp.put(5,"E");
+        reverseLookUp.put(4,"F");
     }
 }

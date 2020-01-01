@@ -24,7 +24,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-class MsritGrabber extends Grabber {
+class MsritGrabber extends Grabber
+{
     private WebElement usnField, captchaField, btnSubmit;
     private String solvedCaptcha;
     private Map<String,String> depMap;
@@ -391,5 +392,4 @@ class MsritGrabber extends Grabber {
         for (int i = MIN_BATCH; i <= MAX_BATCH; ++i)
             getBatchResult(i);
     }
-
 }

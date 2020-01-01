@@ -27,7 +27,6 @@ import java.util.regex.Pattern;
 
 class RvceGrabber extends Grabber
 {
-
     void login(String usn) {
         /*For each student, the driver opens the results.rvce.edu.in webpage, enters the USN, gets the
         captcha text from the page, solves it and enters it into the field and then hits submit.
@@ -252,5 +251,4 @@ class RvceGrabber extends Grabber
     {
         return Calendar.getInstance().get(Calendar.YEAR) % 100 -1;
     }
-
 }
