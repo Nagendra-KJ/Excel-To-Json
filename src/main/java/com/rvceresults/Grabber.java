@@ -38,10 +38,10 @@ abstract class Grabber implements ActionListener
         initialise();
         getCollegeResult();
         driver.close();
+        calculateAverage();
         writeToJSONFile();
         usnMsg.setText("Program will now exit");
         mainWindow.dispose();
-        calculateAverage();
     }
 
     abstract void writeToFile(Record student) throws IOException;
