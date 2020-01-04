@@ -39,8 +39,7 @@ class MsritGrabber extends Grabber
         for (int i = 0; i < student.getCourseLength(); ++i)
         {
             courseMap.put(student.getCourse(i).getCode(), (int) headerRow.getLastCellNum());
-            headerRow.createCell(headerRow.getLastCellNum()).
-                    setCellValue(student.getCourse(i).getName());
+            headerRow.createCell(headerRow.getLastCellNum()).setCellValue(student.getCourse(i).getName());
         }
     }
 
@@ -227,7 +226,10 @@ class MsritGrabber extends Grabber
                 if (m.find())
                     sgpa = Float.parseFloat(m.group().trim());
             }
-            sem = (19 - Integer.parseInt(usn.substring(3, 5))) * 2 - 1;
+            int currentYear=Calendar.getInstance().get(Calendar.YEAR) % 100;
+            sem = (currentYear - Integer.parseInt(usn.substring(3, 5))) * 2;
+            if(Calendar.getInstance().get(Calendar.MONTH)<Calendar.JUNE)
+                sem-=1;
             branch = depMap.get(usn.substring(5, 7));
             return new Record(branch, usn, name, sgpa, cgpa, sem);
         } catch (NoSuchElementException e)
@@ -258,13 +260,13 @@ class MsritGrabber extends Grabber
                 String code = scan.next();
                 course.setCode(code);
                 StringBuilder courseName = new StringBuilder();
-                while (!scan.hasNextInt())
+                while (!(scan.hasNextInt() || scan.hasNextDouble()))
                 {
                     courseName.append(scan.next());
                     courseName.append(" ");
                 }
                 course.setName(courseName.toString());
-                while (scan.hasNextInt())
+                while (scan.hasNextInt() || scan.hasNextDouble())
                     scan.next();
                 if (scan.hasNext())
                     course.setGrade(scan.next());
@@ -331,7 +333,6 @@ class MsritGrabber extends Grabber
         return sem;
     }
 
-
     @Override
     void getDepartmentResult(String department, int year) throws IOException
     {
@@ -365,15 +366,5 @@ class MsritGrabber extends Grabber
         String[] branches = {"AT", "BT", "CH", "CV", "CS", "EE", "EC", "EI", "IM", "IS", "ME", "ML", "TE"};
         for (String branch : branches)
             getDepartmentResult(branch, year);
-    }
-
-    @Override
-    void getCollegeResult() throws IOException
-    {
-        //Gets the result of the entire college by cycling through the results of MIN_BATCH to MAX_BATCH
-        int MAX_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 - 1;
-        int MIN_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 - 4;
-        for (int i = MIN_BATCH; i <= MAX_BATCH; ++i)
-            getBatchResult(i);
     }
 }

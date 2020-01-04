@@ -177,15 +177,6 @@ class RvceGrabber extends Grabber
             getDepartmentResult(branch, year);
     }
 
-    void getCollegeResult() throws IOException
-    {
-        //Gets the result of the entire college by cycling through the results of MIN_BATCH to MAX_BATCH
-        int MAX_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 - 1;
-        int MIN_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 - 4;
-        for (int i = MIN_BATCH; i <= MAX_BATCH; ++i)
-            getBatchResult(i);
-    }
-
     void writeToFile(Record student) throws IOException
     {
         /*HSSFWorkbook is the format of Excel 1997-2007 Workbooks. Each workbook contains the results of

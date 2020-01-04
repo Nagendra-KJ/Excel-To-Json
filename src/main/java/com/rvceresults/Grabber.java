@@ -17,6 +17,7 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
+import java.util.Calendar;
 
 abstract class Grabber implements ActionListener
 {
@@ -143,7 +144,14 @@ abstract class Grabber implements ActionListener
 
     abstract void getBatchResult(int year) throws IOException;
 
-    abstract void getCollegeResult() throws IOException;
+    private void getCollegeResult() throws IOException
+    {
+        //Gets the result of the entire college by cycling through the results of MIN_BATCH to MAX_BATCH
+        int MAX_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 - 1;
+        int MIN_BATCH = Calendar.getInstance().get(Calendar.YEAR) % 100 - 4;
+        for (int i = MIN_BATCH; i <= MAX_BATCH; ++i)
+            getBatchResult(i);
+    }
 
     private void setPath()
     {

@@ -81,11 +81,6 @@ class Record
         return cgpa;
     }
 
-    public void setCgpa(float cgpa)
-    {
-        this.cgpa = cgpa;
-    }
-
     List<Course> getSubjects()
     {
         return subjects;
