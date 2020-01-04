@@ -56,6 +56,7 @@ abstract class Grabber  implements ActionListener
         if(path==null)
         {
             System.out.println("Issue with setting the path");
+            driver.close();
             System.exit(new ExitStatus().EXIT_WITHOUT_PATH);
         }
         setUI();
@@ -155,7 +156,10 @@ abstract class Grabber  implements ActionListener
         if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
             file = fileChooser.getSelectedFile();
         else
+        {
+            driver.close();
             System.exit(new ExitStatus().EXIT_WITHOUT_PATH);
+        }
         path = file.getAbsolutePath();
         path = path + File.separator + collegeName;
         File directory = new File(path);
