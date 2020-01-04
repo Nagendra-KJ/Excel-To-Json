@@ -7,18 +7,11 @@ tags to get the required web elements.
  */
 package com.rvceresults;
 
-import org.apache.poi.hssf.usermodel.HSSFSheet;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.List;
@@ -201,36 +194,7 @@ class RvceGrabber extends Grabber
         results of a particular student. The first row of every worksheet called header row contains the
         field names for those specific columns.
          */
-        String filepath = getPath() + "Semester " + student.getSem() + ".xls";
-        File excelFile = new File(filepath);
-        HSSFWorkbook workbook;
-        FileOutputStream fileOutputStream;
-        String rankFormula = "RANK($";
-        char rowAlphabet;
-        if (!excelFile.exists())
-        {
-            if (!excelFile.createNewFile())
-                return;
-            workbook = new HSSFWorkbook();
-            Sheet sheet = workbook.createSheet(student.getBranch());
-            createHeader(sheet, student);
-            fileOutputStream = new FileOutputStream(excelFile);
-            workbook.write(fileOutputStream);
-            fileOutputStream.close();
-        } else
-        {
-            FileInputStream fileInputStream = new FileInputStream(excelFile);
-            workbook = new HSSFWorkbook(fileInputStream);
-            fileInputStream.close();
-        }
-        HSSFSheet worksheet = workbook.getSheet(student.getBranch());
-        if (worksheet == null)
-        {
-            worksheet = workbook.createSheet(student.getBranch());
-            createHeader(worksheet, student);
-        }
-        CellStyle cellStyle = workbook.createCellStyle();
-        cellStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00"));
+        openWorkbook(student);
         Row dataRow = worksheet.createRow(worksheet.getLastRowNum() + 1);
         dataRow.createCell(0).setCellValue(student.getUsn());
         dataRow.createCell(1).setCellValue(student.getName());
@@ -240,15 +204,7 @@ class RvceGrabber extends Grabber
         gpaCell.setCellValue(student.getSgpa());
         gpaCell.setCellStyle(cellStyle);
         dataRow.createCell(dataRow.getLastCellNum()).setCellValue(student.getSgpa());
-        rowAlphabet = gpaCell.getAddress().toString().charAt(0);
-        Cell rankCell = dataRow.createCell(dataRow.getLastCellNum());
-        rankFormula = rankFormula + gpaCell.getAddress().toString() +
-                ",$" + rowAlphabet + "$2:$" + rowAlphabet + "$250)";
-        rankCell.setCellFormula(rankFormula);
-        fileOutputStream = new FileOutputStream(excelFile);
-        workbook.write(fileOutputStream);
-        fileOutputStream.close();
-        workbook.close();
+        closeWorkbook(gpaCell,dataRow);
     }
 
     private void getDiplomaResult(String department, int year) throws IOException

@@ -37,11 +37,6 @@ class Record
         return branch;
     }
 
-    public void setBranch(String branch)
-    {
-        this.branch = branch;
-    }
-
     String getUsn()
     {
         return usn;
@@ -110,10 +105,5 @@ class Record
     List<Course> getSubjects()
     {
         return subjects;
-    }
-
-    public void setSubjects(List<Course> subjects)
-    {
-        this.subjects = subjects;
     }
 }

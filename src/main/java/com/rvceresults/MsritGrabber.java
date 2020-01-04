@@ -1,9 +1,6 @@
 package com.rvceresults;
 
-import org.apache.poi.hssf.usermodel.HSSFSheet;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.openqa.selenium.NoSuchElementException;
@@ -17,8 +14,6 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.*;
@@ -37,6 +32,9 @@ class MsritGrabber extends Grabber
     {
         /* The first row of each sheet in the Excel file contains the name of each field. This function
         populates that row of each sheet
+        The order of the header row is important as it determines where each cell is in future methods.
+        We are adding the courses towards the end in MSR because the college allows for variable number of courses to be
+        registered in the exam unlike RV.
          */
         Row headerRow = worksheet.createRow(0);
         headerRow.createCell(0).setCellValue("USN");
@@ -61,36 +59,7 @@ class MsritGrabber extends Grabber
         results of a particular student. The first row of every worksheet called header row contains the
         field names for those specific columns.
          */
-        String filepath = getPath() + "Semester " + student.getSem() + ".xls";
-        File excelFile = new File(filepath);
-        HSSFWorkbook workbook;
-        FileOutputStream fileOutputStream;
-        String rankFormula = "RANK($";
-        char rowAlphabet;
-        if (!excelFile.exists())
-        {
-            if (!excelFile.createNewFile())
-                return;
-            workbook = new HSSFWorkbook();
-            Sheet sheet = workbook.createSheet(student.getBranch());
-            createHeader(sheet, student);
-            fileOutputStream = new FileOutputStream(excelFile);
-            workbook.write(fileOutputStream);
-            fileOutputStream.close();
-        } else
-        {
-            FileInputStream fileInputStream = new FileInputStream(excelFile);
-            workbook = new HSSFWorkbook(fileInputStream);
-            fileInputStream.close();
-        }
-        HSSFSheet worksheet = workbook.getSheet(student.getBranch());
-        if (worksheet == null)
-        {
-            worksheet = workbook.createSheet(student.getBranch());
-            createHeader(worksheet, student);
-        }
-        CellStyle cellStyle = workbook.createCellStyle();
-        cellStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00"));
+        openWorkbook(student);
         Row dataRow = worksheet.createRow(worksheet.getLastRowNum() + 1);
         dataRow.createCell(0).setCellValue(student.getUsn());
         dataRow.createCell(1).setCellValue(student.getName());
@@ -98,11 +67,6 @@ class MsritGrabber extends Grabber
         Cell gpaCell = dataRow.createCell(dataRow.getLastCellNum());
         gpaCell.setCellValue(student.getCgpa());
         gpaCell.setCellStyle(cellStyle);
-        rowAlphabet = gpaCell.getAddress().toString().charAt(0);
-        Cell rankCell = dataRow.createCell(dataRow.getLastCellNum());
-        rankFormula = rankFormula + gpaCell.getAddress().toString() +
-                ",$" + rowAlphabet + "$2:$" + rowAlphabet + "$250)";
-        rankCell.setCellFormula(rankFormula);
         for (int i = 0; i < student.getCourseLength(); ++i)
         {
             Integer courseColumn = courseMap.get(student.getCourse(i).getCode());
@@ -111,16 +75,11 @@ class MsritGrabber extends Grabber
                 Row headerRow = worksheet.getRow(0);
                 courseColumn = (int) headerRow.getLastCellNum();
                 courseMap.put(student.getCourse(i).getCode(), (int) headerRow.getLastCellNum());
-                headerRow.createCell(headerRow.getLastCellNum())
-                        .setCellValue(student.getCourse(i).getName());
+                headerRow.createCell(headerRow.getLastCellNum()).setCellValue(student.getCourse(i).getName());
             }
             dataRow.createCell(courseColumn).setCellValue(student.getCourse(i).getGrade());
         }
-        fileOutputStream = new FileOutputStream(excelFile);
-        workbook.write(fileOutputStream);
-        fileOutputStream.close();
-        workbook.close();
-
+        closeWorkbook(gpaCell,dataRow);
     }
 
     private void breakCaptcha() throws IOException

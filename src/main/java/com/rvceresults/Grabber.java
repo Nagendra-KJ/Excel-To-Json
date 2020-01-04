@@ -18,27 +18,28 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
 
-abstract class Grabber  implements ActionListener
+abstract class Grabber implements ActionListener
 {
-    private static String path;
+    private String path;
     private final String[] fileNames = {"Semester 1.xls", "Semester 2.xls", "Semester 3.xls", "Semester 4.xls",
             "Semester 5.xls", "Semester 6.xls", "Semester 7.xls", "Semester 8.xls"};
     private final HashBiMap<String, Integer> gradeLookUp = HashBiMap.create();
     FirefoxDriver driver;
+    private FileOutputStream fileOutputStream;
+    private File excelFile;
     private String collegeName;
     private JLabel usnMsg;
     private JFrame mainWindow;
     private Row headerRow;
     HSSFCellStyle cellStyle;
-
-    static String getPath()
-    {
-        return path;
-    }
+    private HSSFWorkbook workbook;
+    Sheet worksheet;
 
     final void getResult() throws IOException
     {
         initialise();
+        getStudentResult("1RV17EC083");
+        getStudentResult("1RV17EC093");
         //getCollegeResult();
         driver.close();
         calculateAverage();
@@ -56,7 +57,7 @@ abstract class Grabber  implements ActionListener
         if (this.getClass().getSimpleName().equals("MsritGrabber"))
             collegeName = "MSRIT";
         setPath();
-        if(path==null)
+        if (path == null)
         {
             System.out.println("Issue with setting the path");
             driver.close();
@@ -198,7 +199,7 @@ abstract class Grabber  implements ActionListener
         File excelFile;
         for (String fileName : fileNames)
         {
-            excelFile = new File(getPath(), fileName);
+            excelFile = new File(path, fileName);
             try
             {
                 fileInputStream = new FileInputStream(excelFile);
@@ -221,11 +222,8 @@ abstract class Grabber  implements ActionListener
                     Cell avgCCell = avgRow.createCell(headerRow.getLastCellNum() - 2);
                     avgCCell.setCellType(CellType.FORMULA);
                     avgCCell.setCellFormula(formula);
-                    if(cellStyle==null)
-                    {
-                        cellStyle= workbook.createCellStyle();
-                        cellStyle.setDataFormat(workbook.createDataFormat().getFormat("#.00"));
-                    }
+                    cellStyle = workbook.createCellStyle();
+                    cellStyle.setDataFormat(workbook.createDataFormat().getFormat("#.00"));
                     avgCCell.setCellStyle(cellStyle);
                 }
                 fileOutputStream = new FileOutputStream(excelFile);
@@ -242,7 +240,7 @@ abstract class Grabber  implements ActionListener
 
     private void writeToJSONFile() throws IOException
     {
-        FileWriter fileWriter = new FileWriter(new File(Grabber.getPath(), "dataset.json"));
+        FileWriter fileWriter = new FileWriter(new File(path, "dataset.json"));
         getUniversityRecord().write(fileWriter);
         fileWriter.close();
     }
@@ -292,7 +290,7 @@ abstract class Grabber  implements ActionListener
         {
             try
             {
-                workbook = WorkbookFactory.create(new File(Grabber.getPath(), fileName));
+                workbook = WorkbookFactory.create(new File(path, fileName));
                 FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
                 formulaEvaluator.evaluateAll();
                 university.put(fileName.replaceAll(".xls", ""), getBatchRecord(workbook));
@@ -311,7 +309,7 @@ abstract class Grabber  implements ActionListener
         File excelFile;
         for (String fileName : fileNames)
         {
-            excelFile = new File(getPath(), fileName);
+            excelFile = new File(path, fileName);
             try
             {
                 fileInputStream = new FileInputStream(excelFile);
@@ -375,6 +373,50 @@ abstract class Grabber  implements ActionListener
         gradeLookUp.put("D", 6);
         gradeLookUp.put("E", 5);
         gradeLookUp.put("F", 4);
+    }
+
+    void openWorkbook(Record student) throws IOException
+    {
+        String filepath = path + "Semester " + student.getSem() + ".xls";
+        excelFile = new File(filepath);
+        if (!excelFile.exists())
+        {
+            if (!excelFile.createNewFile())
+                return ;
+            workbook = new HSSFWorkbook();
+            Sheet sheet = workbook.createSheet(student.getBranch());
+            createHeader(sheet, student);
+            fileOutputStream = new FileOutputStream(excelFile);
+            workbook.write(fileOutputStream);
+            fileOutputStream.close();
+        } else
+        {
+            FileInputStream fileInputStream = new FileInputStream(excelFile);
+            workbook = new HSSFWorkbook(fileInputStream);
+            fileInputStream.close();
+        }
+        worksheet = workbook.getSheet(student.getBranch());
+        if (worksheet == null)
+        {
+            worksheet = workbook.createSheet(student.getBranch());
+            createHeader(worksheet, student);
+        }
+        cellStyle = workbook.createCellStyle();
+        cellStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00"));
+
+    }
+
+    void closeWorkbook(Cell gpaCell,Row dataRow) throws IOException
+    {
+        char rowAlphabet = gpaCell.getAddress().toString().charAt(0);
+        Cell rankCell = dataRow.createCell(dataRow.getLastCellNum());
+        String rankFormula = "RANK($" + gpaCell.getAddress().toString() +
+                ",$" + rowAlphabet + "$2:$" + rowAlphabet + "$250)";
+        rankCell.setCellFormula(rankFormula);
+        fileOutputStream = new FileOutputStream(excelFile);
+        workbook.write(fileOutputStream);
+        fileOutputStream.close();
+        workbook.close();
     }
 
 }

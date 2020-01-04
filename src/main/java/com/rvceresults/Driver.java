@@ -18,10 +18,17 @@ and is written to dataset.json file.
  */
 public class Driver
 {
-    public static void main(String[] args) throws IOException
+    public static void main(String[] args)
     {
         RvceGrabber rvceGrabber = new RvceGrabber();
-        rvceGrabber.getResult();
+        try
+        {
+            rvceGrabber.getResult();
+        } catch (IOException e)
+        {
+            System.out.println("There was an error!");
+            e.printStackTrace();
+        }
         System.exit(new ExitStatus().EXIT_ON_COMPLETION);
     }
 }
