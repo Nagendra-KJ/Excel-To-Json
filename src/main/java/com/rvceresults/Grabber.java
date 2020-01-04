@@ -36,7 +36,9 @@ abstract class Grabber implements ActionListener
     final void getResult() throws IOException
     {
         initialise();
-        getCollegeResult();
+        //getCollegeResult();
+        getDepartmentResult("CH",17);
+        getDepartmentResult("BT",17);
         driver.close();
         setRankFormula();
         calculateAverage();
