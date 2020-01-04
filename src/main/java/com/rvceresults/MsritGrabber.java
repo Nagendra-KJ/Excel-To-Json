@@ -71,6 +71,8 @@ class MsritGrabber extends Grabber
             if (!excelFile.createNewFile())
                 return;
             workbook = new HSSFWorkbook();
+            cellStyle= workbook.createCellStyle();
+            cellStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00"));
             Sheet sheet = workbook.createSheet(student.getBranch());
             createHeader(sheet, student);
             fileOutputStream = new FileOutputStream(excelFile);
@@ -94,6 +96,7 @@ class MsritGrabber extends Grabber
         dataRow.createCell(dataRow.getLastCellNum()).setCellValue(student.getSgpa());
         Cell gpaCell = dataRow.createCell(dataRow.getLastCellNum());
         gpaCell.setCellValue(student.getCgpa());
+        gpaCell.setCellStyle(cellStyle);
         rowAlphabet = gpaCell.getAddress().toString().charAt(0);
         Cell rankCell = dataRow.createCell(dataRow.getLastCellNum());
         rankFormula = rankFormula + gpaCell.getAddress().toString() +

@@ -10,6 +10,7 @@ package com.rvceresults;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.openqa.selenium.By;
@@ -228,6 +229,8 @@ class RvceGrabber extends Grabber
             worksheet = workbook.createSheet(student.getBranch());
             createHeader(worksheet, student);
         }
+        CellStyle cellStyle = workbook.createCellStyle();
+        cellStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00"));
         Row dataRow = worksheet.createRow(worksheet.getLastRowNum() + 1);
         dataRow.createCell(0).setCellValue(student.getUsn());
         dataRow.createCell(1).setCellValue(student.getName());
@@ -235,6 +238,7 @@ class RvceGrabber extends Grabber
             dataRow.createCell(i + 2).setCellValue(student.getCourse(i).getGrade());
         Cell gpaCell = dataRow.createCell(dataRow.getLastCellNum());
         gpaCell.setCellValue(student.getSgpa());
+        gpaCell.setCellStyle(cellStyle);
         dataRow.createCell(dataRow.getLastCellNum()).setCellValue(student.getSgpa());
         rowAlphabet = gpaCell.getAddress().toString().charAt(0);
         Cell rankCell = dataRow.createCell(dataRow.getLastCellNum());

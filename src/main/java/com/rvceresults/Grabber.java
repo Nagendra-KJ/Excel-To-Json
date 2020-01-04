@@ -1,10 +1,11 @@
 package com.rvceresults;
 
 import com.google.common.collect.HashBiMap;
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 
@@ -15,6 +16,7 @@ import java.awt.event.ActionListener;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DecimalFormat;
 
 abstract class Grabber  implements ActionListener
 {
@@ -27,6 +29,7 @@ abstract class Grabber  implements ActionListener
     private JLabel usnMsg;
     private JFrame mainWindow;
     private Row headerRow;
+    HSSFCellStyle cellStyle;
 
     static String getPath()
     {
@@ -36,7 +39,7 @@ abstract class Grabber  implements ActionListener
     final void getResult() throws IOException
     {
         initialise();
-        getCollegeResult();
+        //getCollegeResult();
         driver.close();
         calculateAverage();
         writeToJSONFile();
@@ -156,10 +159,7 @@ abstract class Grabber  implements ActionListener
         if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
             file = fileChooser.getSelectedFile();
         else
-        {
-            driver.close();
             System.exit(new ExitStatus().EXIT_WITHOUT_PATH);
-        }
         path = file.getAbsolutePath();
         path = path + File.separator + collegeName;
         File directory = new File(path);
@@ -203,7 +203,7 @@ abstract class Grabber  implements ActionListener
             {
                 fileInputStream = new FileInputStream(excelFile);
                 workbook = new HSSFWorkbook(fileInputStream);
-                for (int j = 0; j < workbook.getNumberOfSheets() - 1; ++j)
+                for (int j = 0; j < workbook.getNumberOfSheets(); ++j)
                 {
                     HSSFSheet worksheet = workbook.getSheetAt(j);
                     int nRows = worksheet.getPhysicalNumberOfRows();
@@ -221,6 +221,12 @@ abstract class Grabber  implements ActionListener
                     Cell avgCCell = avgRow.createCell(headerRow.getLastCellNum() - 2);
                     avgCCell.setCellType(CellType.FORMULA);
                     avgCCell.setCellFormula(formula);
+                    if(cellStyle==null)
+                    {
+                        cellStyle= workbook.createCellStyle();
+                        cellStyle.setDataFormat(workbook.createDataFormat().getFormat("#.00"));
+                    }
+                    avgCCell.setCellStyle(cellStyle);
                 }
                 fileOutputStream = new FileOutputStream(excelFile);
                 workbook.write(fileOutputStream);
@@ -237,13 +243,14 @@ abstract class Grabber  implements ActionListener
     private void writeToJSONFile() throws IOException
     {
         FileWriter fileWriter = new FileWriter(new File(Grabber.getPath(), "dataset.json"));
-        getUniversityRecord().writeJSONString(fileWriter);
+        getUniversityRecord().write(fileWriter);
         fileWriter.close();
     }
 
     private JSONObject getStudentRecord(Row studentRow)
     {
         JSONObject record = new JSONObject();
+        DecimalFormat formatter = new DecimalFormat("#.##");
         for (int i = 1; i < headerRow.getPhysicalNumberOfCells(); ++i)
         {
             Cell dataCell = studentRow.getCell(i);
@@ -253,7 +260,7 @@ abstract class Grabber  implements ActionListener
                     record.put(headerRow.getCell(i).getStringCellValue(), dataCell.getStringCellValue());
                 else if (dataCell.getCellType() == CellType.NUMERIC ||
                         dataCell.getCellType() == CellType.FORMULA)
-                    record.put(headerRow.getCell(i).getStringCellValue(), dataCell.getNumericCellValue());
+                    record.put(headerRow.getCell(i).getStringCellValue(), formatter.format(dataCell.getNumericCellValue()));
             }
         }
         return record;
