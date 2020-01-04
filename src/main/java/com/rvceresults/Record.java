@@ -5,10 +5,12 @@ import java.util.List;
 
 class Record
 {
-    private String branch, usn, name;
-    private float sgpa;
+    private final String branch;
+    private final String usn;
+    private final String name;
+    private final float sgpa;
+    private final List<Course> subjects;
     private int sem;
-    private List<Course> subjects;
     private float cgpa;
 
     Record(String branch, String usn, String name, float sgpa, int sem)
@@ -42,19 +44,9 @@ class Record
         return usn;
     }
 
-    public void setUsn(String usn)
-    {
-        this.usn = usn;
-    }
-
     String getName()
     {
         return name;
-    }
-
-    public void setName(String name)
-    {
-        this.name = name;
     }
 
     float getSgpa()
@@ -62,20 +54,12 @@ class Record
         return sgpa;
     }
 
-    public void setSgpa(float sgpa)
-    {
-        this.sgpa = sgpa;
-    }
-
     int getSem()
     {
         return sem;
     }
 
-    void setSem(int sem)
-    {
-        this.sem = sem;
-    }
+    void setSem(int sem) {this.sem=sem;}
 
     void addCourse(Course course)
     {

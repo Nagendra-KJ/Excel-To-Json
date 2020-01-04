@@ -25,22 +25,20 @@ abstract class Grabber implements ActionListener
     private final HashBiMap<String, Integer> gradeLookUp = HashBiMap.create(); //Bi directional lookup table for grade->number conversion
     FirefoxDriver driver; //Common driver passed around between classes
     HSSFCellStyle cellStyle;
-    Sheet worksheet;
+    Sheet worksheet;//WorkSheet is passed among different classes to remove duplicate code.
     private String path;
     private File excelFile;
     private String collegeName;
     private JLabel usnMsg;
     private JFrame mainWindow;
-    private HSSFWorkbook workbook;
+    private HSSFWorkbook workbook;//Workbook is limited to this class but cannot be made local as then WorkSheet would
+                                  //become local
 
     final void getResult() throws IOException
     {
         initialise();
-        //getCollegeResult();
-        getDepartmentResult("CH",17);
-        getDepartmentResult("BT",17);
-        driver.close();
-        setRankFormula();
+        getCollegeResult();
+        calculateRank();
         calculateAverage();
         writeToJSONFile();
         usnMsg.setText("Program will now exit");
@@ -159,8 +157,9 @@ abstract class Grabber implements ActionListener
         path = file.getAbsolutePath();
         path = path + File.separator + collegeName;
         File directory = new File(path);
-        if (!directory.mkdir())
-            System.out.println("Folder creation issue");
+        if(!directory.exists())
+            if (!directory.mkdir())
+                System.out.println("Folder creation issue");
         path = directory.getAbsolutePath();
         path = path + File.separator;
     }
@@ -416,7 +415,7 @@ abstract class Grabber implements ActionListener
         return headerRow;
     }
 
-    private void setRankFormula()
+    private void calculateRank()
     {
         for (String fileName : fileNames)
         {
