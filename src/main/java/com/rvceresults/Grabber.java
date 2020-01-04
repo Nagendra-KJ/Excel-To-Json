@@ -16,7 +16,7 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-abstract class Grabber implements ActionListener
+abstract class Grabber  implements ActionListener
 {
     private static String path;
     private final String[] fileNames = {"Semester 1.xls", "Semester 2.xls", "Semester 3.xls", "Semester 4.xls",
@@ -53,6 +53,11 @@ abstract class Grabber implements ActionListener
         if (this.getClass().getSimpleName().equals("MsritGrabber"))
             collegeName = "MSRIT";
         setPath();
+        if(path==null)
+        {
+            System.out.println("Issue with setting the path");
+            System.exit(new ExitStatus().EXIT_WITHOUT_PATH);
+        }
         setUI();
         FirefoxOptions options = new FirefoxOptions();
         options.addArguments("--headless");

@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.rvceresults</groupId>
-    <artifactId>ExcelToJson</artifactId>
+    <artifactId>Result_Grabber</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <name>ExcelToJson</name>
+    <name>Result_Grabber</name>
     <!-- FIXME change it to the project's website -->
-    <url>http://www.example.com</url>
+    <url>http://rvce-results.web.app</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -41,14 +41,14 @@
             <version>3.141.59</version>
         </dependency>
         <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-controls</artifactId>
-            <version>11</version>
-        </dependency>
-        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>28.2-jre</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>13</version>
         </dependency>
     </dependencies>
 
@@ -93,6 +93,14 @@
                 <plugin>
                     <artifactId>maven-project-info-reports-plugin</artifactId>
                     <version>3.0.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.openjfx</groupId>
+                    <artifactId>javafx-maven-plugin</artifactId>
+                    <version>0.0.3</version>
+                    <configuration>
+                        <mainClass>HelloFX</mainClass>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
