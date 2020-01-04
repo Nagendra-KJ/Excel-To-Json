@@ -3,6 +3,7 @@ package com.rvceresults;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.openqa.selenium.NoSuchElementException;
@@ -71,8 +72,6 @@ class MsritGrabber extends Grabber
             if (!excelFile.createNewFile())
                 return;
             workbook = new HSSFWorkbook();
-            cellStyle= workbook.createCellStyle();
-            cellStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00"));
             Sheet sheet = workbook.createSheet(student.getBranch());
             createHeader(sheet, student);
             fileOutputStream = new FileOutputStream(excelFile);
@@ -90,6 +89,8 @@ class MsritGrabber extends Grabber
             worksheet = workbook.createSheet(student.getBranch());
             createHeader(worksheet, student);
         }
+        CellStyle cellStyle = workbook.createCellStyle();
+        cellStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00"));
         Row dataRow = worksheet.createRow(worksheet.getLastRowNum() + 1);
         dataRow.createCell(0).setCellValue(student.getUsn());
         dataRow.createCell(1).setCellValue(student.getName());
