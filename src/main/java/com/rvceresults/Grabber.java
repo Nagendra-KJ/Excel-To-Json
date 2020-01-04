@@ -20,28 +20,25 @@ import java.text.DecimalFormat;
 
 abstract class Grabber implements ActionListener
 {
-    private String path;
     private final String[] fileNames = {"Semester 1.xls", "Semester 2.xls", "Semester 3.xls", "Semester 4.xls",
-            "Semester 5.xls", "Semester 6.xls", "Semester 7.xls", "Semester 8.xls"};
-    private final HashBiMap<String, Integer> gradeLookUp = HashBiMap.create();
-    FirefoxDriver driver;
-    private FileOutputStream fileOutputStream;
+            "Semester 5.xls", "Semester 6.xls", "Semester 7.xls", "Semester 8.xls"}; //Final list of filenames present in the folder
+    private final HashBiMap<String, Integer> gradeLookUp = HashBiMap.create(); //Bi directional lookup table for grade->number conversion
+    FirefoxDriver driver; //Common driver passed around between classes
+    HSSFCellStyle cellStyle;
+    Sheet worksheet;
+    private String path;
     private File excelFile;
     private String collegeName;
     private JLabel usnMsg;
     private JFrame mainWindow;
-    private Row headerRow;
-    HSSFCellStyle cellStyle;
     private HSSFWorkbook workbook;
-    Sheet worksheet;
 
     final void getResult() throws IOException
     {
         initialise();
-        getStudentResult("1RV17EC083");
-        getStudentResult("1RV17EC093");
-        //getCollegeResult();
+        getCollegeResult();
         driver.close();
+        setRankFormula();
         calculateAverage();
         writeToJSONFile();
         usnMsg.setText("Program will now exit");
@@ -129,19 +126,15 @@ abstract class Grabber implements ActionListener
 
     abstract void getCourseDetails(Record student);
 
-    void createHeader(Sheet worksheet, Record student)
+    void createHeader(Record student)
     {
         /* The first row of each sheet in the Excel file contains the name of each field. This function
         populates that row of each sheet
          */
-        Row headerRow = worksheet.createRow(0);
-        headerRow.createCell(0).setCellValue("USN");
-        headerRow.createCell(headerRow.getLastCellNum()).setCellValue("Name");
+        Row headerRow=initHeader();
         for (int i = 0; i < student.getCourseLength(); ++i)
             headerRow.createCell(headerRow.getLastCellNum()).setCellValue(student.getCourse(i).getName() + "-" + student.getCourse(i).getCode());
-        headerRow.createCell(headerRow.getLastCellNum()).setCellValue("SGPA");
-        headerRow.createCell(headerRow.getLastCellNum()).setCellValue("CGPA");
-        headerRow.createCell(headerRow.getLastCellNum()).setCellValue("Rank");
+
     }
 
     abstract boolean getStudentResult(String usn) throws IOException;
@@ -193,17 +186,13 @@ abstract class Grabber implements ActionListener
 
     private void calculateGPAAverage()
     {
-        HSSFWorkbook workbook;
-        FileInputStream fileInputStream;
-        FileOutputStream fileOutputStream;
-        File excelFile;
         for (String fileName : fileNames)
         {
-            excelFile = new File(path, fileName);
+            File excelFile = new File(path, fileName);
             try
             {
-                fileInputStream = new FileInputStream(excelFile);
-                workbook = new HSSFWorkbook(fileInputStream);
+                FileInputStream fileInputStream = new FileInputStream(excelFile);
+                HSSFWorkbook workbook = new HSSFWorkbook(fileInputStream);
                 for (int j = 0; j < workbook.getNumberOfSheets(); ++j)
                 {
                     HSSFSheet worksheet = workbook.getSheetAt(j);
@@ -211,22 +200,19 @@ abstract class Grabber implements ActionListener
                     Row avgRow = worksheet.getRow(worksheet.getLastRowNum());
                     if (avgRow.getCell(0).toString().equals("AVERAGE"))
                         continue;
-                    avgRow = worksheet.createRow(worksheet.getLastRowNum() + 1);
+                    avgRow = worksheet.createRow(worksheet.getLastRowNum()+1);
                     avgRow.createCell(0).setCellValue("AVERAGE");
                     avgRow.createCell(1).setCellValue("AVERAGE");
-                    Row headerRow = worksheet.getRow(0);
-                    Cell cgpaCell = headerRow.getCell(headerRow.getLastCellNum() - 2);
-                    char cgpaLetter = cgpaCell.getAddress().toString().charAt(0);
                     String formula;
-                    formula = "AVERAGE(" + cgpaLetter + "2:" + cgpaLetter + (nRows) + ")";
-                    Cell avgCCell = avgRow.createCell(headerRow.getLastCellNum() - 2);
+                    formula = "AVERAGE(D" + "2:D" + (nRows) + ")";
+                    Cell avgCCell = avgRow.createCell(3);
                     avgCCell.setCellType(CellType.FORMULA);
                     avgCCell.setCellFormula(formula);
                     cellStyle = workbook.createCellStyle();
                     cellStyle.setDataFormat(workbook.createDataFormat().getFormat("#.00"));
                     avgCCell.setCellStyle(cellStyle);
                 }
-                fileOutputStream = new FileOutputStream(excelFile);
+                FileOutputStream fileOutputStream = new FileOutputStream(excelFile);
                 workbook.write(fileOutputStream);
                 fileOutputStream.close();
                 workbook.close();
@@ -245,7 +231,7 @@ abstract class Grabber implements ActionListener
         fileWriter.close();
     }
 
-    private JSONObject getStudentRecord(Row studentRow)
+    private JSONObject getStudentRecord(Row studentRow,Row headerRow)
     {
         JSONObject record = new JSONObject();
         DecimalFormat formatter = new DecimalFormat("#.##");
@@ -267,9 +253,13 @@ abstract class Grabber implements ActionListener
     private JSONObject getDepartmentRecord(Sheet departmentSheet)
     {
         JSONObject department = new JSONObject();
-        headerRow = departmentSheet.getRow(0);
+        Row headerRow = departmentSheet.getRow(0);
         for (int i = 1; i < departmentSheet.getPhysicalNumberOfRows(); ++i)
-            department.put(departmentSheet.getRow(i).getCell(0).getStringCellValue(), getStudentRecord(departmentSheet.getRow(i)));
+            try
+            {
+                department.put(departmentSheet.getRow(i).getCell(0).getStringCellValue(), getStudentRecord(departmentSheet.getRow(i),headerRow));
+            }catch(NullPointerException ignored)
+            {}
         return department;
     }
 
@@ -320,9 +310,9 @@ abstract class Grabber implements ActionListener
                     worksheet = workbook.getSheetAt(sheetNum);
                     Row avgRow = worksheet.getRow(worksheet.getLastRowNum());
                     Row headerRow = worksheet.getRow(0);
-                    int startingColumn = headerRow.getCell(2).getAddress().toString().charAt(0) - 'A';
-                    int endingColumn = headerRow.getCell(headerRow.getLastCellNum() - 3).getAddress().toString().charAt(0) - 'A';
-                    for (int i = startingColumn; i < endingColumn; ++i)
+                    int startingColumn = 5;
+                    int endingColumn = headerRow.getCell(headerRow.getLastCellNum()-1).getAddress().toString().charAt(0) - 'A';
+                    for (int i = startingColumn; i <= endingColumn; ++i)
                         getAverageGrade(i, avgRow, worksheet);
                 }
                 fileOutputStream = new FileOutputStream(excelFile);
@@ -344,12 +334,13 @@ abstract class Grabber implements ActionListener
 
     private void getAverageGrade(int cNum, Row avgRow, Sheet worksheet)
     {
-        int avgRowNum = avgRow.getRowNum();
-        int numStudents = avgRowNum - 1;
         int sum = 0;
-        for (int i = 1; i < avgRowNum; ++i)
+        int numStudents=worksheet.getPhysicalNumberOfRows()-2;
+        for (int i = 1; i < worksheet.getLastRowNum(); ++i)
         {
             Row currentRow = worksheet.getRow(i);
+            if(currentRow==null)
+                continue;
             String grade = currentRow.getCell(cNum).getStringCellValue();
             Integer gradeWeight = gradeLookUp.get(grade);
             if (gradeWeight == null)
@@ -384,9 +375,7 @@ abstract class Grabber implements ActionListener
             if (!excelFile.createNewFile())
                 return ;
             workbook = new HSSFWorkbook();
-            Sheet sheet = workbook.createSheet(student.getBranch());
-            createHeader(sheet, student);
-            fileOutputStream = new FileOutputStream(excelFile);
+            FileOutputStream fileOutputStream = new FileOutputStream(excelFile);
             workbook.write(fileOutputStream);
             fileOutputStream.close();
         } else
@@ -399,24 +388,63 @@ abstract class Grabber implements ActionListener
         if (worksheet == null)
         {
             worksheet = workbook.createSheet(student.getBranch());
-            createHeader(worksheet, student);
+            createHeader(student);
         }
         cellStyle = workbook.createCellStyle();
         cellStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00"));
 
     }
 
-    void closeWorkbook(Cell gpaCell,Row dataRow) throws IOException
+    void closeWorkbook() throws IOException
     {
-        char rowAlphabet = gpaCell.getAddress().toString().charAt(0);
-        Cell rankCell = dataRow.createCell(dataRow.getLastCellNum());
-        String rankFormula = "RANK($" + gpaCell.getAddress().toString() +
-                ",$" + rowAlphabet + "$2:$" + rowAlphabet + "$250)";
-        rankCell.setCellFormula(rankFormula);
-        fileOutputStream = new FileOutputStream(excelFile);
+        FileOutputStream fileOutputStream = new FileOutputStream(excelFile);
         workbook.write(fileOutputStream);
         fileOutputStream.close();
         workbook.close();
+    }
+
+    Row initHeader()
+    {
+        Row headerRow = worksheet.createRow(0);
+        headerRow.createCell(0).setCellValue("USN");
+        headerRow.createCell(headerRow.getLastCellNum()).setCellValue("Name");
+        headerRow.createCell(headerRow.getLastCellNum()).setCellValue("SGPA");
+        headerRow.createCell(headerRow.getLastCellNum()).setCellValue("CGPA");
+        headerRow.createCell(headerRow.getLastCellNum()).setCellValue("Rank");
+        return headerRow;
+    }
+
+    private void setRankFormula()
+    {
+        for (String fileName : fileNames)
+        {
+            File excelFile = new File(path, fileName);
+            try
+            {
+                FileInputStream fileInputStream = new FileInputStream(excelFile);
+                HSSFWorkbook workbook = new HSSFWorkbook(fileInputStream);
+                for (int j = 0; j < workbook.getNumberOfSheets(); ++j)
+                {
+                    HSSFSheet worksheet = workbook.getSheetAt(j);
+                    int numStudents=worksheet.getPhysicalNumberOfRows()-1;
+                    for (int i = 1; i <=numStudents; ++i)
+                    {
+                        Row dataRow = worksheet.getRow(i);
+                        Cell gpaCell = dataRow.getCell(3);
+                        Cell rankCell = dataRow.createCell(4);
+                        String rankFormula = "RANK($" + gpaCell.getAddress().toString() +
+                                ",$D" +  "$2:$D$"  + (numStudents+1) +")";
+                        rankCell.setCellFormula(rankFormula);
+                    }
+                }
+                FileOutputStream fileOutputStream=new FileOutputStream(excelFile);
+                workbook.write(fileOutputStream);
+                fileOutputStream.close();
+                fileInputStream.close();
+            } catch (IOException ignored)
+            {
+            }
+        }
     }
 
 }

@@ -166,7 +166,7 @@ class RvceGrabber extends Grabber
             }
         }
         if (year < currentDiplomaYear())
-            getDiplomaResult(department, year + 1);
+           getDiplomaResult(department, year + 1);
     }
 
     void getBatchResult(int year) throws IOException
@@ -198,13 +198,14 @@ class RvceGrabber extends Grabber
         Row dataRow = worksheet.createRow(worksheet.getLastRowNum() + 1);
         dataRow.createCell(0).setCellValue(student.getUsn());
         dataRow.createCell(1).setCellValue(student.getName());
-        for (int i = 0; i < student.getCourseLength(); ++i)
-            dataRow.createCell(i + 2).setCellValue(student.getCourse(i).getGrade());
+        dataRow.createCell(dataRow.getLastCellNum()).setCellValue(student.getSgpa());
+        dataRow.getCell(dataRow.getLastCellNum()-1).setCellStyle(cellStyle);
         Cell gpaCell = dataRow.createCell(dataRow.getLastCellNum());
         gpaCell.setCellValue(student.getSgpa());
         gpaCell.setCellStyle(cellStyle);
-        dataRow.createCell(dataRow.getLastCellNum()).setCellValue(student.getSgpa());
-        closeWorkbook(gpaCell,dataRow);
+        for (int i = 0; i < student.getCourseLength(); ++i)
+            dataRow.createCell(i+5).setCellValue(student.getCourse(i).getGrade());
+        closeWorkbook();
     }
 
     private void getDiplomaResult(String department, int year) throws IOException
@@ -221,7 +222,8 @@ class RvceGrabber extends Grabber
                     String.format("%03d", i);
             if (getStudentResult(usn))
                 ++invalidCount;
-            else invalidCount = 0;
+            else
+                invalidCount = 0;
             if (invalidCount >= 10)
             {
                 if (usn.contains("010"))

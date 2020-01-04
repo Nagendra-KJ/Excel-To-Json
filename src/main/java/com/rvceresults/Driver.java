@@ -11,8 +11,7 @@ and is written to dataset.json file.
 
 /*
 @Todo
-0. Refactor to remove duplicities
-1. Add college choice option
+1. Overhaul UI
 2. Add multi-threading support
 19428353894058 Add AI for MSR lulzkie
  */

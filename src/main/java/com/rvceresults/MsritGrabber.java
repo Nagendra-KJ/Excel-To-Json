@@ -2,7 +2,6 @@ package com.rvceresults;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.*;
 
@@ -28,7 +27,7 @@ class MsritGrabber extends Grabber
     private Map<String, Integer> courseMap;
 
     @Override
-    void createHeader(Sheet worksheet, Record student)
+    void createHeader(Record student)
     {
         /* The first row of each sheet in the Excel file contains the name of each field. This function
         populates that row of each sheet
@@ -36,12 +35,7 @@ class MsritGrabber extends Grabber
         We are adding the courses towards the end in MSR because the college allows for variable number of courses to be
         registered in the exam unlike RV.
          */
-        Row headerRow = worksheet.createRow(0);
-        headerRow.createCell(0).setCellValue("USN");
-        headerRow.createCell(headerRow.getLastCellNum()).setCellValue("Name");
-        headerRow.createCell(headerRow.getLastCellNum()).setCellValue("SGPA");
-        headerRow.createCell(headerRow.getLastCellNum()).setCellValue("CGPA");
-        headerRow.createCell(headerRow.getLastCellNum()).setCellValue("Rank");
+        Row headerRow = initHeader();
         for (int i = 0; i < student.getCourseLength(); ++i)
         {
             courseMap.put(student.getCourse(i).getCode(), (int) headerRow.getLastCellNum());
@@ -75,11 +69,12 @@ class MsritGrabber extends Grabber
                 Row headerRow = worksheet.getRow(0);
                 courseColumn = (int) headerRow.getLastCellNum();
                 courseMap.put(student.getCourse(i).getCode(), (int) headerRow.getLastCellNum());
-                headerRow.createCell(headerRow.getLastCellNum()).setCellValue(student.getCourse(i).getName());
+                headerRow.createCell(headerRow.getLastCellNum())
+                        .setCellValue(student.getCourse(i).getName());
             }
             dataRow.createCell(courseColumn).setCellValue(student.getCourse(i).getGrade());
         }
-        closeWorkbook(gpaCell,dataRow);
+        closeWorkbook();
     }
 
     private void breakCaptcha() throws IOException
