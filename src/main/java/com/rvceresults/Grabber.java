@@ -170,6 +170,20 @@ abstract class Grabber implements ActionListener
                 System.out.println("Folder creation issue");
         path = directory.getAbsolutePath();
         path = path + File.separator;
+        try
+        {
+            File pathFile = new File("path.dat");
+            if(!pathFile.exists())
+                if(!pathFile.createNewFile())
+                    System.out.println("Error in creating path file");
+            FileWriter fileWriter = new FileWriter(pathFile);
+            fileWriter.write(path);
+            fileWriter.close();
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
     }
 
     @Override
