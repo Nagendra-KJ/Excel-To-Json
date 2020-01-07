@@ -28,6 +28,8 @@ public class Driver
             System.out.println("There was an error!");
             e.printStackTrace();
         }
+        GpaParser gpaParser = new GpaParser();
+        gpaParser.parse();
         System.exit(new ExitStatus().EXIT_ON_COMPLETION);
     }
 }
